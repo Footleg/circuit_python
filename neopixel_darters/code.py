@@ -1,12 +1,9 @@
-# SPDX-FileCopyrightText: 2021 Kattni Rembor for Adafruit Industries
-#
-# SPDX-License-Identifier: MIT
-
 """
-NeoPixel example for Pico. Displays a rainbow on the NeoPixels.
+NeoPixel darters, an interactive RGB LED installation.
 
 REQUIRED HARDWARE:
 * RGB NeoPixel LEDs connected to pin GP0.
+* TOF vl53l1 sensor on the I2C bus.
 """
 import time
 import random
