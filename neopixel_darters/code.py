@@ -1,6 +1,5 @@
 """
 NeoPixel darters, an interactive RGB LED installation.
-
 REQUIRED HARDWARE:
 * RGB NeoPixel LEDs connected to pin GP0.
 * TOF vl53l1 sensor on the I2C bus.
@@ -19,9 +18,11 @@ num_pixels = 840
 
 # Anti-aliasing: ratio of position coordinate space for animations to actual pixels
 # e.g. Set to 4 means the animation needs to move 4 spaces to move to the next neopixel
+# For longer strip lengths, lower this number to speed up the program as it slows with more pixels to manage.
+# A value of 8 is good for a 240 - 300 led strip. I change it to 4 when I have 900 LEDs using 3 strips.
 aa = 4
 
-# Set speed of animations (1 - 1000)
+# Set speed of animations (1 - 1000) Normally set to 1000 for top speed, but set lower to debug
 speed = 1000
 
 # Tiny2040 board built in RGB LED and button
@@ -84,9 +85,12 @@ charge = 0
 lastDist = 0
 chargeStart = time.monotonic_ns()
 
-#Globals for trcking idle time and state
+#Globals for tracking idle time and state
 idleWait = 10000000000
-isIdle = True
+isIdle = False
+
+#Globals calculated from settings
+particleSpeed = int(48/aa)
 
 
 class darter:
@@ -102,7 +106,6 @@ class darter:
         self.mode = mode
         
         # Initialise class vars which are not set by arguments
-        self.rearIdx = 0
         self.steps = 0
         
         # Mode specific behaviours
@@ -114,7 +117,7 @@ class darter:
         elif self.mode == 2:
             # Mode 2 is hot particles
             self.colourFromSpeed()
-            self.life = 1000 #Life set to zero when speed is zero
+            self.life = 1000 #Life will be set to zero when speed is zero, so give a large value here
             self.slowRate = 10
 
     def update(self, pix):
@@ -143,31 +146,6 @@ class darter:
                     
                 self.colourFromSpeed()
 
-        
-        """
-        #Turn off trailing end LEDs from old position to start of new position
-        if self.speed > 0:
-            wipeIdxLow = self.rearIdx
-            wipeIdxHigh = int(self.pos / aa) - self.halflen
-            if wipeIdxHigh - wipeIdxLow > self.length:
-                wipeIdxHigh = wipeIdxLow + self.length - 2
-        else:
-            wipeIdxLow = int(self.pos / aa) + self.halflen
-            wipeIdxHigh = self.rearIdx
-            #print(f"Low: {wipeIdxLow}; High: {wipeIdxHigh}")
-            if wipeIdxHigh - wipeIdxLow > self.length:
-                wipeIdxLow = wipeIdxHigh - self.length + 2
-                #print(f"Updated Low: {wipeIdxLow}; High: {wipeIdxHigh}; Length:{self.length}")
-            
-        #print(f"Wiping from { wipeIdxLow } to { wipeIdxHigh }")
-        for i in range( wipeIdxLow, wipeIdxHigh + 1 ):
-            #print(f"Wiped { i }")
-            if self.speed > 0:
-                self.safeSetPixel( i, (0,0,0) )
-            else:
-                self.safeSetPixel( i, (0,0,0) )
-        """    
-
         #Set pixels for new position
         for i in range(0, self.halflen ):
             brightness = (2 * (self.halflen - i) ) / (2 * self.halflen)
@@ -188,16 +166,10 @@ class darter:
             #if 0 <= newIdxRear < num_pixels:
             #    pixels[newIdxRear] = (r,g,b)
             self.blendColours(newIdxRear,(r,g,b) )
-                
-        #print(f"Created from { newIdxRear } to { newIdxFront }; pos={self.pos}")
-        #Store idx of last rear pixel
-        if self.speed > 0:
-            self.rearIdx = newIdxRear
-        else:
-            self.rearIdx = newIdxFront
             
         #Update age
         self.life += -1
+        #print(f"Position { self.pos } life={self.life}")
         
     def safeSetPixel(self,idx,colour):
         if 0 <= idx < num_pixels:
@@ -270,7 +242,8 @@ class darter:
 
 
 darters = []
-#darters.append( darter(length=6,life=5000,speed=32,mode=1) )
+#darters.append( darter(length=60,life=1800,pos=160*aa,speed=15,mode=1) )
+#darters.append( darter(length=30,life=840,speed=30,mode=1) )
 #darters.append( darter(length=16,colour=(0,0,255),pos=20*aa,speed=6,life=200) )
 """
 darters.append( darter(length=3,colour=(255,0,0),speed=30,life=200) )
@@ -344,7 +317,7 @@ while True:
                         launchSpeed = 1
                     elif launchSpeed > 30:
                         launchSpeed = 30
-                    life = int( (3*num_pixels-launchSpeed*20) * random.randrange(1,7) / 16)
+                    life = int( (1000 - launchSpeed*20) * random.randrange(1,7) * num_pixels * aa / 9600)
                     darters.append( darter(length=int(length / 1.66),speed=launchSpeed,life=life, mode=1 ) )
                     isIdle = False #Set flag to not idle to prevent random showers
                     print(f"Launched: Length={length} cm, Charge={charge}, Speed={launchSpeed}, Life={life}" )
@@ -378,24 +351,25 @@ while True:
                 else:
                     maxSpd = d.speed
                 spks = (random.randrange(lower,upper))
-                print(f"Died: len={d.length}; lower={lower}; upper={upper}; sparks={spks}")
+                #print(f"Died: len={d.length}; lower={lower}; upper={upper}; sparks={spks}; Total remaining: {len(darters)}")
                 for count in range(spks):
                     spd = maxSpd + random.randrange(-8,8)
                     darters.append( darter(length=1,speed=spd,pos=int(d.pos + random.randrange(-d.halflen,d.halflen)*aa ),mode=2) )
             #Turn off pixels from dead darter
             d.wipeDarterPixels()
-        else:
-            # If a short high speed darter, check if it has collided with any slower darters
+        elif d.mode == 1:
+            # Handle interactions for darters which are mode 1 (i.e. not particles)
             if abs(d.speed) > 28 and d.length < 10:
+                # If a short high speed darter, check if it has collided with any slower darters
                 for chk in range( len(darters) ):
                     d2 = darters[chk]
-                    if chk != i and d2.mode == 1 and abs(d.pos - d2.pos) < 20:
+                    if chk != i and d2.mode == 1 and abs(d.pos - d2.pos) < 5 * aa:
                         # Split darter
                         #print(f"split a:{d.speed} t:{d2.speed}")
                         if d.speed > 0:
-                            spdAdd = 6
+                            spdAdd = particleSpeed
                         else:
-                            spdAdd = -6
+                            spdAdd = -particleSpeed
                         d.speed -= (spdAdd * 2)
                         d.colourFromSpeed()
                         d3spd = d2.speed+spdAdd
@@ -409,6 +383,29 @@ while True:
                         d2.colourFromSpeed()
                         #print(f"After a:{d.speed} t1:{d2.speed} t2:{d3spd}")
                         break;
+            else:
+                # Check if any other darter is in the same position moving with a similar speed
+                for chk in range( len(darters) ):
+                    d2 = darters[chk]
+                    if chk != i and d2.mode == 1:
+                        if abs(d.pos - d2.pos) < 5 * aa:
+                            #print(f"Darters separation distance {abs(d.pos - d2.pos)} Speed1: {d.speed}; Speed2: {d2.speed}; Total remaining: {len(darters)}")
+                            if abs(d.speed - d2.speed) < 8:
+                                # Merge darters
+                                len2 = d2.length
+                                spd2 = d2.speed
+                                life2 = d2.life
+                                #print(f"Darters separation distance {abs(d.pos - d2.pos)} Speed1: {d.speed}; Speed2: {d2.speed}; Total remaining: {len(darters)}")
+                                # Update d2 with combined properties of both
+                                d2.speed = int((d.speed + d2.speed)/2)
+                                d2.length = d.length + d2.length
+                                d2.life = (d.life + d2.life)
+                                #Kill darter
+                                darters.pop(i)
+                                i += -1
+                                print(f"Merged darters; L1={d.length}, L2={len2}, S1={d.speed}, S2={spd2}, Lf1={d.life}, Lf2={life2}, New: len={d2.length}, spd={d2.speed}, lif={d2.life} Darters: {len(darters)}")
+                                break;
+                
         #Increment loop index
         i += 1
         
