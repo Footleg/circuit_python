@@ -20,7 +20,7 @@ num_pixels = 840
 # e.g. Set to 4 means the animation needs to move 4 spaces to move to the next neopixel
 # For longer strip lengths, lower this number to speed up the program as it slows with more pixels to manage.
 # A value of 8 is good for a 240 - 300 led strip. I change it to 4 when I have 900 LEDs using 3 strips.
-aa = 4
+aa = 2
 
 # Set speed of animations (1 - 1000) Normally set to 1000 for top speed, but set lower to debug
 speed = 1000
@@ -90,7 +90,7 @@ idleWait = 10000000000
 isIdle = False
 
 #Globals calculated from settings
-particleSpeed = int(48/aa)
+particleSpeed = int(1 * aa)
 
 
 class darter:
@@ -346,11 +346,11 @@ while True:
                 lower = int(d.length / 5) + 4
                 upper = int(d.length / 3) + 10
                 # Limit max speed added to particles for direction of darter they spawned from
-                if abs(d.speed) > 10:
+                if abs(d.speed) > particleSpeed:
                     if d.speed > 0:
-                        maxSpd = 10
+                        maxSpd = particleSpeed
                     else:
-                        maxSpd = -10
+                        maxSpd = -particleSpeed
                 else:
                     maxSpd = d.speed
                 spks = (random.randrange(lower,upper))
@@ -370,9 +370,9 @@ while True:
                         # Split darter
                         #print(f"split a:{d.speed} t:{d2.speed}")
                         if d.speed > 0:
-                            spdAdd = particleSpeed
+                            spdAdd = 6
                         else:
-                            spdAdd = -particleSpeed
+                            spdAdd = -6
                         d.speed -= (spdAdd * 2)
                         d.colourFromSpeed()
                         d3spd = d2.speed+spdAdd
@@ -407,6 +407,8 @@ while True:
                                 darters.pop(i)
                                 i += -1
                                 print(f"Merged darters; L1={d.length}, L2={len2}, S1={d.speed}, S2={spd2}, Lf1={d.life}, Lf2={life2}, New: len={d2.length}, spd={d2.speed}, lif={d2.life} Darters: {len(darters)}")
+                                #Turn off pixels from dead darter
+                                d.wipeDarterPixels()
                                 break;
                 
         #Increment loop index
@@ -422,7 +424,7 @@ while True:
     if time.monotonic_ns() - idleSince > idleWait and isIdle:
         #Spawn a random particle shower
         position = random.randrange(num_pixels * aa)
-        darters.append( darter(length=1,colour=(255,0,255),speed=random.randrange(-10,10),pos=position,life=0) )
+        darters.append( darter(length=1,colour=(255,0,255),speed=random.randrange(-particleSpeed,particleSpeed),pos=position,life=0) )
         
         if num_showers > 0:
             #Short wait until next shower
