@@ -229,19 +229,22 @@ class darter:
             r = 255
             g = 255
             b = 255
-            if absSpeed < 4:
-                #Range 0 - 3
-                g = int( (absSpeed + 2) * 255/5 )
+            if absSpeed < 7:
+                #Range 0 - 6
+                #Translates to 1 - 7. Fade down green from 255 to 0 over range 0 - 7
+                g = int( (absSpeed + 1) * 255/7 )
                 b = 0
-            elif absSpeed < 9:
-                #Range 4 - 8
-                b = int( (absSpeed-3) * 255/5 )
+            elif absSpeed < 11:
+                #Range 7 - 10
+                #Translates to 1 - 4. Fade down blue from 255 to 0 over range 0 - 5
+                b = int( (absSpeed-6) * 255/5 )
                 
         #print(f"Abs Speed: {absSpeed} RGB ({r},{g},{b})")
         self.colour = (r,g,b)
 
 
 darters = []
+#darters.append( darter(length=12,life=1,pos=100*aa,speed=-15,mode=1) )
 #darters.append( darter(length=60,life=1800,pos=160*aa,speed=15,mode=1) )
 #darters.append( darter(length=30,life=840,speed=30,mode=1) )
 #darters.append( darter(length=16,colour=(0,0,255),pos=20*aa,speed=6,life=200) )
@@ -419,7 +422,7 @@ while True:
     if time.monotonic_ns() - idleSince > idleWait and isIdle:
         #Spawn a random particle shower
         position = random.randrange(num_pixels * aa)
-        darters.append( darter(length=1,colour=(255,0,255),speed=0,pos=position,life=0) )
+        darters.append( darter(length=1,colour=(255,0,255),speed=random.randrange(-10,10),pos=position,life=0) )
         
         if num_showers > 0:
             #Short wait until next shower
