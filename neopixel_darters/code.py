@@ -205,7 +205,7 @@ class darter:
             b = 0
             if absSpeed > 30:
                 b = 0 #Red
-            if absSpeed > 20:
+            elif absSpeed > 20:
                 #Range 21 - 30 Red -> Yellow
                 g = 255 - int( (absSpeed - 20) * 255/10 )
             elif absSpeed > 14:
