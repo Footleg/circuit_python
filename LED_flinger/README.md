@@ -33,6 +33,16 @@ kits. You would need to find some example code online for reading a distance fro
 distance readings from them.The VL53L1X chip worked well for this project, but I have not yet found a way to protect it from the elements. Anything I tried as a 
 window on a case caused the sensor to misbehave, so I ended up just mounting the bare board on the outside of the case.
 
+## Power Considerations ##
+LED Strips can use a lot of power when many LEDs are lit brightly. When developing I have found setting the brightness low (0.1) allows me to power a couple of 5m strips
+from the USB port on my laptop, but be careful as a code bug can result in the USB port being overloaded of too many LEDs are lit at the same time. For full
+operation of an installation I have found the power can be injected into the LED strip ends or joins between strips and runs fine over 10m of strips. So with 4x 5m strips
+you can inject 5V power in the middle join, and it happily powers 2 strips in each direction without needing additional power cables. The Picos can be powered from the 
+ends of the LED strips. Just ensure you use a 5V power supply that can provide the current required for the length of LED strips you choose to use. In theory each LED set to white at full brightness will consume 60mA. So a full set of 4x 5m strips (1200 LEDs) will need a 5V 72A supply! In practise you can use lower brightness and this code
+does not light all the LEDs at once. I have found 5A is sufficient with this code powering 840 LEDs, but you should work out your own needs for yourself, especially if 
+you make changes to the code. There may be bugs I have not found which prevent LEDs being turned off properly, and launching a darter quickly lights every LED in the strip
+when that happens. That's how I learned my laptop has over current detection on the USB ports! 
+
 ## Hardware Assembly ##
 The neopixel strips need connecting to 5V, GND and a GPIO pin for the data in line. You can use any available GPIO pin (just update the pin number in the code to 
 match). My strips came with a loose socket with 3 wires which I soldered directly to my RP2040 board. Red to 5V, white to GND and the green wire to the GPIO pin.
