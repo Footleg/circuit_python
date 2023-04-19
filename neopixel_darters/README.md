@@ -1,4 +1,4 @@
-# Neopixel Flinger #
+# LED Flinger #
 This project is an interactive LED installation using a time of flight (TOF) sensor as a touchless input to launch strings of LEDs along an RGB LED strip. 
 The code is written in Circuit Python, so should be easy to port to any microcontroller which has Circuit Python support and I2C. The only other hardware required 
 is a neopixel LED strip (obviously), a TOF sensor and I used a button on one of the GPIO pins to toggle the brightness. You also need a 5V power supply capable of 
@@ -56,3 +56,6 @@ Now you can copy the code.py file from the github repository onto your device, r
 should run. To debug the code or troubleshoot any problems, I like to use the Thonny editor. This works well for me with Circuit Python on both Windows PCs and Linux 
 computers like the Raspberry Pi. Open the code file on your device in Thonny, and click Stop, followed by Run in the editor. You should see the output from the
 program in the console now (make sure Thonny is set to Circuit Python mode).
+
+## 2 Player Version ##
+This project was extended to create a 2 player LED Flinger experience. A pair of Pico boards communicating over UART were used. The main board code is in the file code_p1.py and controls the LED strip and receives data over UART from the secondary board placed at the other end of the LED strip. The secondary board is not connected to the LED strip, but sends data gather from the TOF sensor attached to it over UART to the main board. The secondary board code is in the file codep2.py. Rename each of these to code.py on each Pico so they run on boot. I used RS485 boards to connect the UART pins between the Pico boards for reliable communication over 20m of twisted pair cable. Each Pico requires the tof_decoder.py file which ensures the same code is used for both players to interpret the inputs from the TOF sensors at each end.
